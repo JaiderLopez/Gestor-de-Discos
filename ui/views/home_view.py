@@ -3,6 +3,8 @@ from ui.components.disk_card import DiskCard
 from ui.components.disk_form import DiskForm
 from services.supabase_service import SupabaseService
 from core.models import Disk
+from typing import List
+from core.models import Disk, ContentItem
 
 class HomeView(ft.Container):
     def __init__(self, page: ft.Page):
@@ -90,19 +92,21 @@ class HomeView(ft.Container):
             )
         self.page.update()
 
+# ... (resto del código sin cambios)
+
     def _handle_edit_disk(self, disk: Disk):
         self._disk_form.load_disk_into_form(disk)
 
-    def _handle_disk_save(self, disk_id, name: str, capacity: int, used: int, contents: list[str]):
+    def _handle_disk_save(self, disk_id: str, name: str, capacity: int, contents: List[ContentItem]):
         if disk_id:
-            self.disk_service.update_disk(disk_id, name, capacity, used, contents)
+            self.disk_service.update_disk(disk_id, name, capacity, contents)
         else:
-            self.disk_service.add_disk(name, capacity, used, contents)
+            self.disk_service.add_disk(name, capacity, contents)
         self._update_disk_cards()
 
     def _handle_disk_delete(self, disk_id: str):
         self.disk_service.delete_disk(disk_id)
-        self._update_disk_cards()
+# ... (resto del código sin cambios)
 
     def _apply_filters(self, e=None):
         name_query = self._filter_name_input.value

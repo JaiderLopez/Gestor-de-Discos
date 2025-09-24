@@ -31,12 +31,14 @@ class DiskCard(ft.Card):
             height=6
         )
 
+        content_summary = ", ".join(item.description for item in self.disk.contents)
+
         return ft.Container(
             content=ft.Column(
                 controls=[
                     ft.Text(self.disk.name, weight=ft.FontWeight.BOLD, size=16),
                     ft.Text(f"{self.disk.free_space_gb} GB Libres", size=12, color=ft.Colors.WHITE70),
-                    ft.Text(f"Contenido: {', '.join(self.disk.contents)[:40]}...", size=11, color=ft.Colors.WHITE54, italic=True),
+                    ft.Text(f"Contenido: {content_summary[:40]}...", size=11, color=ft.Colors.WHITE54, italic=True),
                     progress_bar,
                     ft.Row(
                         [

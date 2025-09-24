@@ -1,41 +1,57 @@
 import flet as ft
+from typing import List
+
+class ContentItem:
+    def __init__(self, description: str, size_gb: int):
+        self.description = description
+        self.size_gb = size_gb
+
+    def to_dict(self):
+        return {"description": self.description, "size_gb": self.size_gb}
+
+    @staticmethod
+    def from_dict(data: dict):
+        return ContentItem(description=data.get("description", ""), size_gb=data.get("size_gb", 0))
 
 class Disk:
-   def __init__(self, id: str, name: str, total_capacity_gb: int, used_space_gb: int, contents: list[str]):
-      self.id = id # Usar un UUID o timestamp para IDs únicos
-      self.name = name
-      self.total_capacity_gb = total_capacity_gb
-      self.used_space_gb = used_space_gb
-      self.contents = contents # Lista de strings, ej: ["Proyectos", "Backups"]
+    def __init__(self, id: str, name: str, total_capacity_gb: int, contents: List[ContentItem]):
+        self.id = id
+        self.name = name
+        self.total_capacity_gb = total_capacity_gb
+        self.contents = contents
 
-   @property
-   def free_space_gb(self) -> int:
-      return self.total_capacity_gb - self.used_space_gb
+    @property
+    def used_space_gb(self) -> int:
+        return sum(item.size_gb for item in self.contents)
 
-   @property
-   def usage_percentage(self) -> float:
-      if self.total_capacity_gb == 0:
-         return 0.0
-      return (self.used_space_gb / self.total_capacity_gb) * 100
+    @property
+    def free_space_gb(self) -> int:
+        return self.total_capacity_gb - self.used_space_gb
 
-   def to_dict(self):
-      return {
-         "id": self.id,
-         "name": self.name,
-         "total_capacity_gb": self.total_capacity_gb,
-         "used_space_gb": self.used_space_gb,
-         "contents": self.contents,
-      }
+    @property
+    def usage_percentage(self) -> float:
+        if self.total_capacity_gb == 0:
+            return 0.0
+        return (self.used_space_gb / self.total_capacity_gb) * 100
 
-   @staticmethod
-   def from_dict(data: dict):
-      return Disk(
-         id=data["id"],
-         name=data["name"],
-         total_capacity_gb=data["total_capacity_gb"],
-         used_space_gb=data["used_space_gb"],
-         contents=data["contents"],
-      )
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "total_capacity_gb": self.total_capacity_gb,
+            "contents": [item.to_dict() for item in self.contents],
+        }
+
+    @staticmethod
+    def from_dict(data: dict):
+        contents_list = [ContentItem.from_dict(item) for item in data.get("contents", [])]
+        # The used_space_gb is now calculated, so it's not passed to the constructor
+        return Disk(
+            id=data.get("id"),
+            name=data.get("name"),
+            total_capacity_gb=data.get("total_capacity_gb"),
+            contents=contents_list,
+        )
 
 # Variables importantes:
 # - id: Identificador único del disco.

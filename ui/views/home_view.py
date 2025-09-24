@@ -1,44 +1,55 @@
 import flet as ft
 from ui.components.disk_card import DiskCard
 from ui.components.disk_form import DiskForm
-from services.supabase_service import SupabaseService  # CAMBIADO
+from services.supabase_service import SupabaseService
 from core.models import Disk
 
 class HomeView(ft.Container):
     def __init__(self, page: ft.Page):
         super().__init__()
         self.page = page
-        self.disk_service = SupabaseService()  # CAMBIADO
+        self.disk_service = SupabaseService()
         self.expand = True
+        self.padding = 20 # Añadir padding general
 
-        self._disk_cards_container = ft.ResponsiveRow(controls=[],
-                                                      run_spacing={"xs": 10}, spacing={"xs": 10}, vertical_alignment=ft.CrossAxisAlignment.START)
+        self._disk_cards_container = ft.ResponsiveRow(
+            controls=[],
+            run_spacing=15,
+            spacing=15,
+            vertical_alignment=ft.CrossAxisAlignment.START
+        )
         self._disk_form = DiskForm(
             on_save=self._handle_disk_save,
             on_clear=lambda: self._disk_form.clear_form(),
             on_delete=self._handle_disk_delete
         )
 
-        # Controles de filtrado
-        self._filter_name_input = ft.TextField(label="Search by Name", on_change=self._apply_filters, expand=True)
-        self._filter_content_input = ft.TextField(label="Search by Content", on_change=self._apply_filters, expand=True)
+        # Estilo para los filtros
+        filter_style = {
+            "border_color": "transparent",
+            "bgcolor": ft.Colors.WHITE10,
+            "border_radius": 6,
+            "expand": True
+        }
+
+        self._filter_name_input = ft.TextField(label="Buscar por Nombre", on_change=self._apply_filters, **filter_style)
+        self._filter_content_input = ft.TextField(label="Buscar por Contenido", on_change=self._apply_filters, **filter_style)
         self._filter_free_space_slider = ft.Slider(
-            min=0, max=1000, divisions=10, label="Espacio Libre Mínimo: {value} GB",
+            min=0, max=1000, divisions=20, label="Espacio Libre Mínimo: {value} GB",
             on_change_end=self._apply_filters,
             value=0,
-            expand=True
+            active_color=ft.Colors.BLUE_ACCENT_400,
+            inactive_color=ft.Colors.WHITE30
         )
 
         self.content = ft.Row(
             controls=[
                 ft.Column(
-                    [
-                        self._disk_form
-                    ],
-                    width=400,
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER
+                    [self._disk_form],
+                    width=350,
+                    spacing=20
                 ),
-                ft.VerticalDivider(),
+                ft.VerticalDivider(width=20, color="transparent"),
                 ft.Column(
                     [
                         ft.Text("Discos Registrados", size=24, weight=ft.FontWeight.BOLD),
@@ -48,26 +59,25 @@ class HomeView(ft.Container):
                                 self._filter_content_input,
                                 ft.IconButton(icon=ft.Icons.REFRESH, on_click=self._refresh_disk_list, tooltip="Recargar Discos")
                             ],
-                            alignment=ft.MainAxisAlignment.START
+                            spacing=10
                         ),
-                        ft.Text("Filtrar por Espacio Libre:", size=14),
+                        ft.Text("Filtrar por Espacio Libre:"),
                         self._filter_free_space_slider,
-                        ft.Divider(),
-                        self._disk_cards_container
+                        ft.Divider(height=10, color="transparent"),
+                        ft.Column([self._disk_cards_container], scroll=ft.ScrollMode.ADAPTIVE, expand=True)
                     ],
                     expand=True,
-                    horizontal_alignment=ft.CrossAxisAlignment.START,
-                    scroll=ft.ScrollMode.ADAPTIVE
+                    spacing=15
                 )
             ],
             expand=True,
             vertical_alignment=ft.CrossAxisAlignment.START
         )
 
-        self._update_disk_cards()  # Cargar datos desde Supabase al iniciar
+        self._update_disk_cards()
 
     def _update_disk_cards(self, disks_to_display=None):
-        self._disk_cards_container.controls = []
+        self._disk_cards_container.controls.clear()
         disks = disks_to_display if disks_to_display is not None else self.disk_service.get_all_disks()
 
         for disk in disks:
@@ -89,12 +99,10 @@ class HomeView(ft.Container):
         else:
             self.disk_service.add_disk(name, capacity, used, contents)
         self._update_disk_cards()
-        self.page.update()
 
     def _handle_disk_delete(self, disk_id: str):
         self.disk_service.delete_disk(disk_id)
         self._update_disk_cards()
-        self.page.update()
 
     def _apply_filters(self, e=None):
         name_query = self._filter_name_input.value
@@ -113,7 +121,7 @@ class HomeView(ft.Container):
         self._filter_content_input.value = ""
         self._filter_free_space_slider.value = 0
         self._update_disk_cards()
-        self.page.update()
+
 
 
 # Variables importantes:

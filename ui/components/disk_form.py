@@ -1,26 +1,45 @@
 import flet as ft
-from  core.models import Disk
-# import option
+from core.models import Disk
 
 class DiskForm(ft.Column):
     def __init__(self, on_save, on_clear, on_delete):
         super().__init__()
         self.on_save = on_save
         self.on_clear = on_clear
-        self.on_delete = on_delete # Solo se usará si hay un disco cargado
+        self.on_delete = on_delete
         self.selected_disk_id = None
 
-        self._name_input = ft.TextField(label="Nombre del Disco")
-        self._capacity_input = ft.TextField(label="Capacidad Total (GB)", input_filter= ft.InputFilter(allow=True, regex_string=r"[0-9]"))
-        self._used_input = ft.TextField(label="Espacio Usado (GB)", input_filter= ft.InputFilter(allow=True, regex_string=r"[0-9]"))
-        self._contents_input = ft.TextField(label="Contenidos (separados por coma)")
+        # Estilo común para los campos de texto
+        textfield_style = {
+            "border_color": "transparent",
+            "bgcolor": ft.Colors.WHITE10,
+            "border_radius": 6,
+        }
 
-        self._save_button = ft.ElevatedButton(text="Guardar Disco", on_click=self._on_save_click)
-        self._clear_button = ft.OutlinedButton(text="Limpiar Formulario", on_click=lambda e: self.clear_form())
-        self._delete_button = ft.ElevatedButton(text="Eliminar Disco", icon=ft.Icons.DELETE,
-                                                on_click = self._on_delete_click,
-                                                style = ft.ButtonStyle(bgcolor=ft.Colors.RED_500),
-                                                visible = True) # Visible solo al editar
+        self._name_input = ft.TextField(label="Nombre del Disco", **textfield_style)
+        self._capacity_input = ft.TextField(label="Capacidad Total (GB)", input_filter=ft.InputFilter(allow=True, regex_string=r"[0-9]"), **textfield_style)
+        self._used_input = ft.TextField(label="Espacio Usado (GB)", input_filter=ft.InputFilter(allow=True, regex_string=r"[0-9]"), **textfield_style)
+        self._contents_input = ft.TextField(label="Contenidos (separados por coma)", **textfield_style)
+
+        self._save_button = ft.ElevatedButton(
+            text="Guardar Disco", 
+            on_click=self._on_save_click,
+            expand=True,
+            style=ft.ButtonStyle(bgcolor=ft.Colors.BLUE_ACCENT_700, color=ft.Colors.WHITE)
+        )
+        self._clear_button = ft.OutlinedButton(
+            text="Limpiar", 
+            on_click=lambda e: self.clear_form(),
+            expand=True
+        )
+        self._delete_button = ft.ElevatedButton(
+            text="Eliminar Disco", 
+            icon=ft.Icons.DELETE_FOREVER,
+            on_click=self._on_delete_click,
+            visible=False,
+            expand=True,
+            style=ft.ButtonStyle(bgcolor=ft.Colors.RED_600, color=ft.Colors.WHITE)
+        )
 
         self.controls = [
             ft.Text("Gestionar Disco", size=20, weight=ft.FontWeight.BOLD),
@@ -28,12 +47,12 @@ class DiskForm(ft.Column):
             self._capacity_input,
             self._used_input,
             self._contents_input,
-            ft.Row([self._save_button, self._clear_button]),
-            self._delete_button # Agregamos el botón de eliminar al formulario
+            ft.Row([self._save_button, self._clear_button], spacing=10),
+            self._delete_button
         ]
+        self.spacing = 15
 
     def _on_save_click(self, e):
-        # Validar entradas (simplificado para el ejemplo)
         try:
             name = self._name_input.value
             capacity = int(self._capacity_input.value)
@@ -41,40 +60,29 @@ class DiskForm(ft.Column):
             contents = [c.strip() for c in self._contents_input.value.split(',')] if self._contents_input.value else []
 
             if not name or capacity <= 0 or used < 0:
-                self.page.overlay.append(ft.SnackBar(ft.Text("Por favor, complete todos los campos requeridos y asegúrese que los valores sean válidos."), open= True))
-                self.page.update()
+                # Simple feedback, could be improved with a dialog or error text
                 return
 
             self.on_save(self.selected_disk_id, name, capacity, used, contents)
             self.clear_form()
-            self.page.overlay.append(ft.SnackBar(ft.Text("Disco guardado con éxito."), open=True))
-            self.page.update()
 
-        except ValueError:
-            self.page.overlay.append(ft.SnackBar(ft.Text("Por favor, ingrese números válidos para capacidad y espacio usado."), open=True))
-            self.page.update()
-
-
+        except (ValueError, TypeError):
+            # Handle cases where conversion to int fails or fields are empty
+            pass
 
     def _on_delete_click(self, e):
         if self.selected_disk_id and self.on_delete:
             self.on_delete(self.selected_disk_id)
             self.clear_form()
-            self.page.overlay.append(ft.SnackBar(ft.Text("Disco eliminado."), open=True))
-            self.page.update()
 
-
-    def load_disk_into_form(self, disk):
-        if disk:
-            self.selected_disk_id = disk.id
-            self._name_input.value = disk.name
-            self._capacity_input.value = str(disk.total_capacity_gb)
-            self._used_input.value = str(disk.used_space_gb)
-            self._contents_input.value = ", ".join(disk.contents)
-            self._delete_button.visible = True
-        else:
-            self.clear_form()
-        if self.page: self.page.update()
+    def load_disk_into_form(self, disk: Disk):
+        self.selected_disk_id = disk.id
+        self._name_input.value = disk.name
+        self._capacity_input.value = str(disk.total_capacity_gb)
+        self._used_input.value = str(disk.used_space_gb)
+        self._contents_input.value = ", ".join(disk.contents)
+        self._delete_button.visible = True
+        self.update()
 
     def clear_form(self):
         self.selected_disk_id = None
@@ -83,7 +91,8 @@ class DiskForm(ft.Column):
         self._used_input.value = ""
         self._contents_input.value = ""
         self._delete_button.visible = False
-        if self.page: self.page.update()
+        self.update()
+
 
 
 # Variables importantes:

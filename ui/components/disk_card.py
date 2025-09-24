@@ -7,75 +7,67 @@ class DiskCard(ft.Card):
         self.disk = disk
         self.on_edit_click = on_edit_click
         self.on_delete_click = on_delete_click
-        self.elevation = 1
         
-        # Define la distribución de columnas para diferentes tamaños de pantalla
-        self.col = {"xl": 4, "sm": 12, "md": 6} # 1, 2 o 3 tarjetas por fila
-
+        self.col = {"xs": 12, "sm": 6, "md": 4}
+        self.elevation = 4
         self.content = self._build_card_content()
-        self.set_color_based_on_free_space()
-        
 
-    def _get_card_color(self) -> str:
-        if self.disk.free_space_gb <= 100:
-            return ft.Colors.RED_700
-        elif self.disk.free_space_gb > 600:
-            return ft.Colors.GREEN_700
+    def _get_status_color(self) -> str:
+        usage = self.disk.usage_percentage
+        if usage > 80:
+            return ft.Colors.RED_600
+        elif usage > 50:
+            return ft.Colors.AMBER_700
         else:
-            return ft.Colors.AMBER_700 # Usaremos AMBER para el intermedio
-
-    def set_color_based_on_free_space(self):
-        self.color = self._get_card_color()
-        if self.page: # Asegurarse de que el control esté en una página antes de actualizar
-            self.page.update()
+            return ft.Colors.GREEN_600
 
     def _build_card_content(self):
-        # Barrita de progreso
+        status_color = self._get_status_color()
+
         progress_bar = ft.ProgressBar(
-            value = self.disk.usage_percentage / 100,
-            color = ft.Colors.BLUE_ACCENT_200,
-            bgcolor = ft.Colors.BLUE_GREY_100,
-            height = 8
+            value=self.disk.usage_percentage / 100,
+            color=status_color,
+            bgcolor=ft.Colors.with_opacity(0.2, ft.Colors.WHITE),
+            height=6
         )
 
         return ft.Container(
             content=ft.Column(
-                controls= [
-                    ft.Text(value= self.disk.name, weight=ft.FontWeight.BOLD, size=18),
-                    ft.Divider(),
-                    ft.Row(
-                        controls= [
-                            ft.Text(f"Capacidad: {self.disk.total_capacity_gb} GB"),
-                            ft.VerticalDivider(),
-                            ft.Text(f"Usado: {self.disk.used_space_gb} GB"),
-                        ],
-                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN
-                    ),
-                    ft.Text(f"Libre: {self.disk.free_space_gb} GB", weight= ft.FontWeight.W_500),
+                controls=[
+                    ft.Text(self.disk.name, weight=ft.FontWeight.BOLD, size=16),
+                    ft.Text(f"{self.disk.free_space_gb} GB Libres", size=12, color=ft.Colors.WHITE70),
+                    ft.Text(f"Contenido: {', '.join(self.disk.contents)[:40]}...", size=11, color=ft.Colors.WHITE54, italic=True),
                     progress_bar,
-                    ft.Text(f"Contenido: {', '.join(self.disk.contents)[:50]}...", size=12, color=ft.Colors.WHITE), # Resumen
                     ft.Row(
                         [
-                            ft.IconButton(
-                                icon= ft.Icons.EDIT,
-                                tooltip= "Editar",
-                                on_click= lambda e: self.on_edit_click(self.disk)
-                            ),
-                            ft.IconButton(
-                                icon=ft.Icons.DELETE,
-                                tooltip="Eliminar",
-                                on_click=lambda e: self.on_delete_click(self.disk.id)
-                            ),
+                            ft.Text(f"{self.disk.used_space_gb} GB / {self.disk.total_capacity_gb} GB", size=10, color=ft.Colors.WHITE54),
+                            ft.Row([
+                                ft.IconButton(
+                                    icon=ft.Icons.EDIT_OUTLINED,
+                                    tooltip="Editar",
+                                    on_click=lambda e: self.on_edit_click(self.disk),
+                                    icon_size=18,
+                                    icon_color=ft.Colors.WHITE70
+                                ),
+                                ft.IconButton(
+                                    icon=ft.Icons.DELETE_OUTLINE,
+                                    tooltip="Eliminar",
+                                    on_click=lambda e: self.on_delete_click(self.disk.id),
+                                    icon_size=18,
+                                    icon_color=ft.Colors.WHITE70
+                                ),
+                            ])
                         ],
-                        alignment=ft.MainAxisAlignment.END
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN
                     )
                 ],
-                spacing=8
+                spacing=6
             ),
-            padding=15,
-            expand=True,
-            # width=300 # Ancho fijo para las tarjetas -> ELIMINADO
+            padding=12,
+            border=ft.border.only(left=ft.border.BorderSide(5, status_color)),
+            border_radius=ft.border_radius.all(6)
         )
+
 
 # Variables importantes:
 # - disk: El objeto Disk que esta tarjeta representa.

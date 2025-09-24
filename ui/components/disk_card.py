@@ -8,6 +8,10 @@ class DiskCard(ft.Card):
         self.on_edit_click = on_edit_click
         self.on_delete_click = on_delete_click
         self.elevation = 1
+        
+        # Define la distribución de columnas para diferentes tamaños de pantalla
+        self.col = {"xl": 4, "sm": 12, "md": 6} # 1, 2 o 3 tarjetas por fila
+
         self.content = self._build_card_content()
         self.set_color_based_on_free_space()
         
@@ -49,7 +53,7 @@ class DiskCard(ft.Card):
                     ),
                     ft.Text(f"Libre: {self.disk.free_space_gb} GB", weight= ft.FontWeight.W_500),
                     progress_bar,
-                    ft.Text(f"Contenido: {', '.join(self.disk.contents)[:50]}...", size=12, color=ft.Colors.GREY_600), # Resumen
+                    ft.Text(f"Contenido: {', '.join(self.disk.contents)[:50]}...", size=12, color=ft.Colors.WHITE), # Resumen
                     ft.Row(
                         [
                             ft.IconButton(
@@ -69,7 +73,8 @@ class DiskCard(ft.Card):
                 spacing=8
             ),
             padding=15,
-            width=300 # Ancho fijo para las tarjetas
+            expand=True,
+            # width=300 # Ancho fijo para las tarjetas -> ELIMINADO
         )
 
 # Variables importantes:

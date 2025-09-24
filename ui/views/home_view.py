@@ -1,19 +1,18 @@
 import flet as ft
 from ui.components.disk_card import DiskCard
 from ui.components.disk_form import DiskForm
-from services.disk_service import DiskService
+from services.supabase_service import SupabaseService  # CAMBIADO
 from core.models import Disk
-import asyncio
 
 class HomeView(ft.Container):
     def __init__(self, page: ft.Page):
         super().__init__()
         self.page = page
-        self.disk_service = DiskService() # Instancia del servicio de discos
-        self.expand = True # Para que ocupe todo el espacio disponible
-                        
+        self.disk_service = SupabaseService()  # CAMBIADO
+        self.expand = True
+
         self._disk_cards_container = ft.ResponsiveRow(controls=[],
-                                                      run_spacing= {"xs": 10}, spacing= {"xs": 10}, vertical_alignment= ft.CrossAxisAlignment.START) # Contenedor para las tarjetas
+                                                      run_spacing={"xs": 10}, spacing={"xs": 10}, vertical_alignment=ft.CrossAxisAlignment.START)
         self._disk_form = DiskForm(
             on_save=self._handle_disk_save,
             on_clear=lambda: self._disk_form.clear_form(),
@@ -24,15 +23,14 @@ class HomeView(ft.Container):
         self._filter_name_input = ft.TextField(label="Search by Name", on_change=self._apply_filters, expand=True)
         self._filter_content_input = ft.TextField(label="Search by Content", on_change=self._apply_filters, expand=True)
         self._filter_free_space_slider = ft.Slider(
-            min= 0, max= 1000, divisions= 10, label="Espacio Libre Mínimo: {value} GB",
+            min=0, max=1000, divisions=10, label="Espacio Libre Mínimo: {value} GB",
             on_change_end=self._apply_filters,
-            value= 0, # Valor inicial
-            expand= True
+            value=0,
+            expand=True
         )
 
         self.content = ft.Row(
-            controls= [
-                # Columna izquierda: Formulario de gestión
+            controls=[
                 ft.Column(
                     [
                         self._disk_form
@@ -41,7 +39,6 @@ class HomeView(ft.Container):
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER
                 ),
                 ft.VerticalDivider(),
-                # Columna derecha: Listado de discos y filtros
                 ft.Column(
                     [
                         ft.Text("Discos Registrados", size=24, weight=ft.FontWeight.BOLD),
@@ -60,34 +57,23 @@ class HomeView(ft.Container):
                     ],
                     expand=True,
                     horizontal_alignment=ft.CrossAxisAlignment.START,
-                    scroll=ft.ScrollMode.ADAPTIVE # Habilita el scroll si hay muchas tarjetas
+                    scroll=ft.ScrollMode.ADAPTIVE
                 )
             ],
             expand=True,
             vertical_alignment=ft.CrossAxisAlignment.START
         )
 
-        self._load_initial_data() # Cargar algunos datos de ejemplo al iniciar
-        # print("cargar datos iniciales...")
+        self._update_disk_cards()  # Cargar datos desde Supabase al iniciar
 
-    def _load_initial_data(self):
-        # Datos de ejemplo
-        self.disk_service.add_disk("SSD Principal", 500, 450, ["Sistema Operativo", "Apps"])
-        self.disk_service.add_disk("HDD Backups", 2000, 1200, ["Fotos Familiares", "Documentos"])
-        self.disk_service.add_disk("NVMe Juegos", 1000, 100, ["Juegos Actuales"])
-        self.disk_service.add_disk("USB Trabajo", 128, 10, ["Proyectos Activos"])
-        self.disk_service.add_disk("Servidor Media", 4000, 3800, ["Peliculas", "Series"])
-        self._update_disk_cards()
-
-    def _update_disk_cards(self, disks_to_display = None):
-        # Limpia el contenedor y añade nuevas tarjetas
+    def _update_disk_cards(self, disks_to_display=None):
         self._disk_cards_container.controls = []
         disks = disks_to_display if disks_to_display is not None else self.disk_service.get_all_disks()
 
         for disk in disks:
             self._disk_cards_container.controls.append(
                 DiskCard(
-                    disk = disk,
+                    disk=disk,
                     on_edit_click=self._handle_edit_disk,
                     on_delete_click=self._handle_disk_delete
                 )
@@ -102,7 +88,7 @@ class HomeView(ft.Container):
             self.disk_service.update_disk(disk_id, name, capacity, used, contents)
         else:
             self.disk_service.add_disk(name, capacity, used, contents)
-        self._update_disk_cards() # Refresca la lista de tarjetas
+        self._update_disk_cards()
         self.page.update()
 
     def _handle_disk_delete(self, disk_id: str):
@@ -126,7 +112,7 @@ class HomeView(ft.Container):
         self._filter_name_input.value = ""
         self._filter_content_input.value = ""
         self._filter_free_space_slider.value = 0
-        self._update_disk_cards() # Mostrar todos los discos sin filtrar
+        self._update_disk_cards()
         self.page.update()
 
 

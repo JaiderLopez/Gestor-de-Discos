@@ -78,6 +78,19 @@ class HomeView(ft.Container):
 
         self._update_disk_cards()
 
+        # Dialogo de confirmación para eliminar
+        self._confirm_delete_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Confirmar Eliminación"),
+            content=ft.Text("¿Estás seguro de que quieres eliminar este disco?"),
+            actions=[
+                ft.TextButton("Sí", on_click=self._confirm_delete_action),
+                ft.TextButton("No", on_click=self._cancel_delete_action),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        self._disk_to_delete_id = None
+
     def _update_disk_cards(self, disks_to_display=None):
         self._disk_cards_container.controls.clear()
         disks = disks_to_display if disks_to_display is not None else self.disk_service.get_all_disks()
@@ -92,7 +105,6 @@ class HomeView(ft.Container):
             )
         self.page.update()
 
-# ... (resto del código sin cambios)
 
     def _handle_edit_disk(self, disk: Disk):
         self._disk_form.load_disk_into_form(disk)
@@ -105,8 +117,26 @@ class HomeView(ft.Container):
         self._update_disk_cards()
 
     def _handle_disk_delete(self, disk_id: str):
-        self.disk_service.delete_disk(disk_id)
-# ... (resto del código sin cambios)
+        self._disk_to_delete_id = disk_id
+        # self._confirm_delete_dialog.open = True
+        self.page.overlay.append(self._confirm_delete_dialog)
+        self._confirm_delete_dialog.open = True
+        self.page.update()
+
+    def _confirm_delete_action(self, e):
+        if self._disk_to_delete_id:
+            self.disk_service.delete_disk(self._disk_to_delete_id)
+            self._disk_to_delete_id = None
+            self._update_disk_cards() # Actualiza la lista de discos
+        self._confirm_delete_dialog.open = False
+        self.page.update()
+        self.page.overlay.pop()
+
+    def _cancel_delete_action(self, e):
+        self._disk_to_delete_id = None
+        self._confirm_delete_dialog.open = False
+        self.page.update()
+        self.page.overlay.pop()
 
     def _apply_filters(self, e=None):
         name_query = self._filter_name_input.value

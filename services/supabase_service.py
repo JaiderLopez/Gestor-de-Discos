@@ -16,10 +16,12 @@ class SupabaseService:
     def add_disk(self, name: str, total_capacity_gb: int, contents: List[ContentItem]) -> Optional[Disk]:
         # Convert ContentItem objects to dictionaries for JSONB storage
         contents_as_dicts = [item.to_dict() for item in contents]
+        usage_gb = sum(item.size_gb for item in contents)
         
         disk_data = {
             "name": name,
             "total_capacity_gb": total_capacity_gb,
+            "used_space_gb": usage_gb,
             "contents": contents_as_dicts,
         }
         

@@ -1,7 +1,11 @@
-/evirtual
+# Entornos virtuales
+/evirtual/
+
+# Archivos de entorno
 .env
-/services\__pycache__
-/storage
-/ui\__pycache__
-/ui\components\__pycache__
-/ui\views\__pycache__
+
+# Caché de Python
+**/__pycache__/
+
+# Almacenamiento local
+/storage/

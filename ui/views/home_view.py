@@ -12,7 +12,7 @@ class HomeView(ft.Container):
         self.page = page
         self.disk_service = SupabaseService()
         self.expand = True
-        self.padding = 20 # Añadir padding general
+        self.padding = 1 # Añadir padding general
 
         self._disk_cards_container = ft.ResponsiveRow(
             controls=[],

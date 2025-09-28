@@ -1,6 +1,8 @@
 import flet as ft
 from core.models import Disk, ContentItem
 from typing import List
+import os
+import shutil
 
 # Clase auxiliar para una fila de contenido
 class ContentItemRow(ft.Row):
@@ -24,12 +26,14 @@ class DiskForm(ft.Column):
         self.on_delete = on_delete
         self.selected_disk_id = None
 
+        self._file_picker = ft.FilePicker(on_result=self._on_file_picker_result)
+
         textfield_style = {"border_color": "transparent", "bgcolor": ft.Colors.WHITE10, "border_radius": 6}
 
         self._name_input = ft.TextField(label="Nombre del Disco", **textfield_style)
         self._capacity_input = ft.TextField(label="Capacidad Total (GB)", input_filter=ft.InputFilter(allow=True, regex_string=r"[0-9]"), **textfield_style)
         
-        self._contents_list = ft.Column(spacing=10)
+        self._contents_list = ft.Column(spacing=10, scroll="auto", height= 180)
         self._add_content_button = ft.TextButton("Añadir Contenido", icon=ft.Icons.ADD, on_click=self._add_content_row)
 
         self._save_button = ft.ElevatedButton(text="Guardar Disco", on_click=self._on_save_click, expand=True, style=ft.ButtonStyle(bgcolor=ft.Colors.BLUE_ACCENT_700, color=ft.Colors.WHITE))
@@ -38,6 +42,11 @@ class DiskForm(ft.Column):
 
         self.controls = [
             ft.Text("Gestionar Disco", size=20, weight=ft.FontWeight.BOLD),
+            ft.ElevatedButton(
+                "Seleccionar Disco",
+                icon=ft.Icons.FOLDER_OPEN,
+                on_click=lambda _: self._file_picker.get_directory_path(),
+            ),
             self._name_input,
             self._capacity_input,
             ft.Divider(),
@@ -49,6 +58,37 @@ class DiskForm(ft.Column):
             self._delete_button
         ]
         self.spacing = 15
+
+    def did_mount(self):
+        self.page.overlay.append(self._file_picker)
+        self.page.update()
+
+    def _on_file_picker_result(self, e: ft.FilePickerResultEvent):
+        if e.path:
+            path = e.path
+            self._name_input.value = os.path.basename(path.strip('\\'))
+            try:
+                total, used, free = shutil.disk_usage(path)
+                self._capacity_input.value = str(round(total / (1024**3)))
+            except FileNotFoundError:
+                self._capacity_input.value = ""
+
+            self._contents_list.controls.clear()
+            try:
+                for item_name in os.listdir(path):
+                    item_path = os.path.join(path, item_name)
+                    if os.path.isdir(item_path):
+                        # Es una carpeta, puedes manejarla como prefieras
+                        self._add_content_row(None, item=ContentItem(description=f"(Carpeta) {item_name}", size_gb=0))
+                    else:
+                        # Es un archivo
+                        size_bytes = os.path.getsize(item_path)
+                        size_gb = round(size_bytes / (1024**3), 2)
+                        self._add_content_row(None, item=ContentItem(description=item_name, size_gb=size_gb))
+            except Exception as ex:
+                print(f"Error al listar contenido: {ex}")
+
+            self.update()
 
     def _add_content_row(self, e, item: ContentItem = None):
         if item is None:
@@ -68,22 +108,29 @@ class DiskForm(ft.Column):
             capacity = int(self._capacity_input.value)
             
             if not name or capacity <= 0:
-                return # Add user feedback
+                self.page.show_snack_bar(ft.SnackBar(ft.Text("El nombre y la capacidad son obligatorios."), open=True))
+                return
 
             # Gather content items from the dynamic rows
             contents: List[ContentItem] = []
+            total_content_size = 0
             for row in self._contents_list.controls:
                 if isinstance(row, ContentItemRow):
                     desc = row.description_input.value
                     size = int(row.size_input.value) if row.size_input.value else 0
                     if desc and size > 0:
                         contents.append(ContentItem(description=desc, size_gb=size))
+                        total_content_size += size
             
+            if total_content_size > capacity:
+                self.page.show_snack_bar(ft.SnackBar(ft.Text("El contenido total no puede exceder la capacidad del disco."), open=True))
+                return
+
             self.on_save(self.selected_disk_id, name, capacity, contents)
             self.clear_form()
 
         except (ValueError, TypeError):
-            pass # Add user feedback
+            self.page.show_snack_bar(ft.SnackBar(ft.Text("Por favor, introduce valores numéricos válidos."), open=True))
 
     def _on_delete_click(self, e):
         if self.selected_disk_id and self.on_delete:

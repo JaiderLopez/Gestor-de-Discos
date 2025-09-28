@@ -90,6 +90,54 @@ class HomeView(ft.Container):
             actions_alignment=ft.MainAxisAlignment.END,
         )
         self._disk_to_delete_id = None
+        self._details_dialog = None
+
+    def _show_disk_details_dialog(self, disk: Disk):
+        content_list = ft.ListView(spacing=5, padding=0, expand=True)
+        for item in disk.contents:
+            content_list.controls.append(ft.Text(f"- {item.description} ({item.size_gb} GB)"))
+
+        self._details_dialog = ft.AlertDialog(
+            modal=False,
+            title=ft.Text(disk.name, weight=ft.FontWeight.BOLD),
+            content=ft.Column(
+                [
+                    ft.Text(f"Capacidad: {disk.total_capacity_gb} GB"),
+                    ft.Text(f"Espacio Usado: {disk.used_space_gb} GB"),
+                    ft.Text(f"Espacio Libre: {disk.free_space_gb} GB"),
+                    ft.Divider(),
+                    ft.Text("Contenido:"),
+                    content_list,
+                ],
+                height=300,
+                width=400,
+                spacing=10,
+            ),
+            actions=[
+                ft.TextButton("Editar", on_click=lambda e: self._handle_edit_from_dialog(disk)),
+                ft.TextButton("Eliminar", on_click=lambda e: self._handle_delete_from_dialog(disk.id)),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+
+        self.page.overlay.append(self._details_dialog)
+        self._details_dialog.open = True
+        self.page.update()
+
+    def _close_details_dialog(self):
+        if self._details_dialog:
+            self._details_dialog.open = False
+            self.page.update()
+            self.page.overlay.pop()
+            self._details_dialog = None
+
+    def _handle_edit_from_dialog(self, disk: Disk):
+        self._close_details_dialog()
+        self._handle_edit_disk(disk)
+
+    def _handle_delete_from_dialog(self, disk_id: str):
+        self._close_details_dialog()
+        self._handle_disk_delete(disk_id)
 
     def _update_disk_cards(self, disks_to_display=None):
         self._disk_cards_container.controls.clear()
@@ -99,8 +147,7 @@ class HomeView(ft.Container):
             self._disk_cards_container.controls.append(
                 DiskCard(
                     disk=disk,
-                    on_edit_click=self._handle_edit_disk,
-                    on_delete_click=self._handle_disk_delete
+                    on_card_click=self._show_disk_details_dialog
                 )
             )
         self.page.update()
@@ -118,7 +165,6 @@ class HomeView(ft.Container):
 
     def _handle_disk_delete(self, disk_id: str):
         self._disk_to_delete_id = disk_id
-        # self._confirm_delete_dialog.open = True
         self.page.overlay.append(self._confirm_delete_dialog)
         self._confirm_delete_dialog.open = True
         self.page.update()

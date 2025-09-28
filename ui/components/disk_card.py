@@ -2,11 +2,10 @@ import flet as ft
 from core.models import Disk
 
 class DiskCard(ft.Card):
-    def __init__(self, disk: Disk, on_edit_click, on_delete_click):
+    def __init__(self, disk: Disk, on_card_click):
         super().__init__()
         self.disk = disk
-        self.on_edit_click = on_edit_click
-        self.on_delete_click = on_delete_click
+        self.on_card_click = on_card_click
         
         self.col = {"xs": 12, "sm": 6, "md": 4}
         self.elevation = 4
@@ -43,22 +42,6 @@ class DiskCard(ft.Card):
                     ft.Row(
                         [
                             ft.Text(f"{self.disk.used_space_gb} GB / {self.disk.total_capacity_gb} GB", size=10, color=ft.Colors.WHITE54),
-                            ft.Row([
-                                ft.IconButton(
-                                    icon=ft.Icons.EDIT_OUTLINED,
-                                    tooltip="Editar",
-                                    on_click=lambda e: self.on_edit_click(self.disk),
-                                    icon_size=18,
-                                    icon_color=ft.Colors.WHITE70
-                                ),
-                                ft.IconButton(
-                                    icon=ft.Icons.DELETE_OUTLINE,
-                                    tooltip="Eliminar",
-                                    on_click=lambda e: self.on_delete_click(self.disk.id),
-                                    icon_size=18,
-                                    icon_color=ft.Colors.WHITE70
-                                ),
-                            ])
                         ],
                         alignment=ft.MainAxisAlignment.SPACE_BETWEEN
                     )
@@ -67,14 +50,14 @@ class DiskCard(ft.Card):
             ),
             padding=12,
             border=ft.border.only(left=ft.border.BorderSide(5, status_color)),
-            border_radius=ft.border_radius.all(6)
+            border_radius=ft.border_radius.all(6),
+            on_click=lambda e: self.on_card_click(self.disk)
         )
 
 
 # Variables importantes:
 # - disk: El objeto Disk que esta tarjeta representa.
-# - on_edit_click, on_delete_click: Callbacks (funciones) que se ejecutarán al hacer clic en los botones.
+# - on_card_click: Callback que se ejecutará al hacer clic en la tarjeta.
 # Métodos importantes:
 # - _get_card_color(): Determina el color de la tarjeta según el espacio libre.
-# - set_color_based_on_free_space(): Aplica el color.
 # - _build_card_content(): Construye la UI interna de la tarjeta.

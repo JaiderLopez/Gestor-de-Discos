@@ -1,2 +1,7 @@
 /evirtual
 .env
+services\__pycache__
+storage
+ui\__pycache__
+ui\components\__pycache__
+ui\views\__pycache__
